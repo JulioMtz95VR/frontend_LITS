@@ -37,7 +37,7 @@ export const LoginForm = () => {
         transition={{ duration: 0.6 }}
         className="w-full max-w-md"
       >
-        <Card className="card-elegant backdrop-blur-lg border border-white/20">
+        <Card className="card-elegant backdrop-blur-lg border border-border bg-white">
           <CardHeader className="text-center space-y-4">
             <motion.div
               initial={{ scale: 0.8 }}
@@ -52,10 +52,10 @@ export const LoginForm = () => {
               />
             </motion.div>
             <div>
-              <CardTitle className="text-2xl font-bold text-white">
+              <CardTitle className="text-2xl font-bold text-foreground">
                 Welcome to LITS Manager
               </CardTitle>
-              <CardDescription className="text-white/80 mt-2">
+              <CardDescription className="text-foreground/80 mt-2">
                 Lead administration and conversation tracking
               </CardDescription>
             </div>
@@ -63,10 +63,10 @@ export const LoginForm = () => {
 
           <CardContent className="space-y-6">
             {/* Authentication Mode Toggle */}
-            <div className="flex items-center justify-between p-4 bg-white/10 rounded-xl backdrop-blur-sm">
+            <div className="flex items-center justify-between p-4 bg-muted rounded-xl">
               <div className="flex items-center space-x-3">
-                <Mail className="w-5 h-5 text-white/80" />
-                <span className="text-white/90 font-medium">
+                <Mail className="w-5 h-5 text-foreground/80" />
+                <span className="text-foreground font-medium">
                   {isGoogleMode ? 'Google Sign-In' : 'Email & Password'}
                 </span>
               </div>
@@ -90,7 +90,7 @@ export const LoginForm = () => {
               ) : (
                 <form onSubmit={handleEmailLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="email" className="text-white/90">Email</Label>
+                    <Label htmlFor="email" className="text-foreground">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                       <Input
@@ -99,14 +99,14 @@ export const LoginForm = () => {
                         placeholder="Enter your email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:border-primary"
+                        className="pl-10 bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
                         required
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="password" className="text-white/90">Password</Label>
+                    <Label htmlFor="password" className="text-foreground">Password</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                       <Input
@@ -115,13 +115,13 @@ export const LoginForm = () => {
                         placeholder="Enter your password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className="pl-10 pr-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 focus:border-primary"
+                        className="pl-10 pr-10 bg-input border-border text-foreground placeholder:text-muted-foreground focus:border-primary"
                         required
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white/60 hover:text-white"
+                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                       >
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
@@ -148,9 +148,9 @@ export const LoginForm = () => {
             </motion.div>
 
             <div className="text-center">
-              <p className="text-white/70 text-sm">
+              <p className="text-foreground/70 text-sm">
                 Don't have an account?{' '}
-                <button className="text-primary-glow hover:underline font-medium">
+                <button className="text-primary hover:underline font-medium">
                   Contact Admin
                 </button>
               </p>
