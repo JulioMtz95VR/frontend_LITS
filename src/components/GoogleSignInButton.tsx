@@ -1,13 +1,26 @@
 import { motion } from 'framer-motion';
-import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/lib/supabase';
 
 export const GoogleSignInButton = () => {
-  const { simulateGoogleLogin } = useAuthStore();
+  const handleGoogleSignIn = async () => {
+    // Aqui se cambia la logica de Supabase
+    try {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        },
+      });
 
-  const handleGoogleSignIn = () => {
-    // This function will be easily replaceable with real Supabase integration
-    simulateGoogleLogin();
+      if (error) {
+        console.error('Error al iniciar sesion con Google', error.message);
+      } else {
+        console.log('Redirigiendo a la autenticacion de Google', data);
+      }
+    } catch (err) {
+      console.error('Excepcion inesperasa durante el inicio de sesion', err);
+    }
   };
 
   return (
