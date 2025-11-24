@@ -8,11 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Search, MessageCircle, Send, ArrowLeft } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-// Mock data - will be replaced with real MongoDB data
+// Datos de Clientes
 const mockConversations = [
   {
     id: '1',
-    userName: 'Alice Johnson',
+    userName: 'Elena Torres',
     userAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150',
     lastMessage: 'Thank you for the information about our lead tracking system...',
     lastMessageDate: new Date(Date.now() - 2 * 60 * 60 * 1000),
@@ -21,7 +21,7 @@ const mockConversations = [
   },
   {
     id: '2', 
-    userName: 'Bob Smith',
+    userName: 'Javier Méndez',
     userAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
     lastMessage: 'Could you help me with the dashboard analytics?',
     lastMessageDate: new Date(Date.now() - 5 * 60 * 60 * 1000),
@@ -30,7 +30,7 @@ const mockConversations = [
   },
   {
     id: '3',
-    userName: 'Carol Williams',
+    userName: 'Valentina Ruiz',
     userAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
     lastMessage: 'The lead conversion rate has improved significantly.',
     lastMessageDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
@@ -42,25 +42,25 @@ const mockConversations = [
 const mockMessages = [
   {
     id: '1',
-    text: 'Hello! I need help with understanding the lead tracking metrics.',
+    text: 'Hola, estoy revisando los logs y veo que la sincronización con Odoo falló hace una hora. ¿Saben si el webhook está caído?',
     sender: 'user',
     timestamp: new Date(Date.now() - 30 * 60 * 1000),
   },
   {
     id: '2',
-    text: 'Hi! I\'d be happy to help you with the lead tracking metrics. Our system tracks several key indicators including conversion rates, response times, and lead quality scores.',
+    text: 'Hola. Déjame verificar el estado del servicio. Acabo de revisar y el endpoint está respondiendo, pero veo un error 401 de autenticación en tu cuenta.',
     sender: 'system',
     timestamp: new Date(Date.now() - 25 * 60 * 1000),
   },
   {
     id: '3',
-    text: 'That sounds great! Can you show me how to filter leads by conversion probability?',
+    text: 'Ah, ya veo. Rotamos las API Keys en producción esta mañana por seguridad. ¿Necesito actualizar el token en el panel de configuración?',
     sender: 'user',
     timestamp: new Date(Date.now() - 20 * 60 * 1000),
   },
   {
     id: '4',
-    text: 'Absolutely! You can use the filtering options in the Lead Tracking section. Look for the "Conversion Probability" dropdown where you can select ranges like High (>80%), Medium (40-80%), or Low (<40%).',
+    text: 'Exacto. Ve a Configuración > Integraciones > Odoo y pega el nuevo token. El sistema reintentará la carga del payload automáticamente en 5 minutos.',
     sender: 'system',
     timestamp: new Date(Date.now() - 15 * 60 * 1000),
   }

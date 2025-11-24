@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { useAuthStore } from '@/store/authStore';
+// import { useAuthStore } from '@/store/authStore';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
@@ -9,22 +10,23 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MessageCircle, BarChart3, Users, LogOut, User } from 'lucide-react';
+// 1. Eliminamos 'BarChart3' de las importaciones
+import { MessageCircle, Users, LogOut, User } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const navigationItems = [
   { path: '/chat-history', label: 'Chat History', icon: MessageCircle },
-  { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
+  // 2. Eliminamos el objeto del Dashboard de este arreglo
   { path: '/lead-tracking', label: 'Lead Tracking', icon: Users },
 ];
 
 export const Navbar = () => {
-  const { user, logout } = useAuthStore();
+  const { user, signOut } = useAuth();
   const location = useLocation();
 
   if (!user) return null;
 
-  return (
+return (
     <motion.header
       initial={{ y: -100 }}
       animate={{ y: 0 }}
@@ -33,8 +35,9 @@ export const Navbar = () => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          {/* Logo and Brand */}
-          <Link to="/dashboard" className="flex items-center space-x-3 hover-lift">
+          
+          {/* Logo */}
+          <Link to="/" className="flex items-center space-x-3 hover-lift">
             <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
               <img 
                 src="/lovable-uploads/582c88f8-0549-4bc4-9e32-51c836850bb7.png" 
@@ -45,7 +48,7 @@ export const Navbar = () => {
             <span className="text-xl font-bold text-white">LITS Manager</span>
           </Link>
 
-          {/* Navigation Links */}
+          {/* Navegación */}
           <nav className="hidden md:flex space-x-1">
             {navigationItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -76,7 +79,7 @@ export const Navbar = () => {
             })}
           </nav>
 
-          {/* User Menu */}
+          {/* Menú de Usuario */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <motion.div
@@ -85,9 +88,10 @@ export const Navbar = () => {
               >
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full">
                   <Avatar className="h-9 w-9 border-2 border-white/20">
-                    <AvatarImage src={user.avatar} alt={user.name} />
+                    {/* 4. CORRECCIÓN: Google devuelve 'picture', no 'avatar' */}
+                    <AvatarImage src={user.picture} alt={user.name} />
                     <AvatarFallback className="bg-primary text-white font-semibold">
-                      {user.name.charAt(0).toUpperCase()}
+                      {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -109,9 +113,11 @@ export const Navbar = () => {
                 <span>Profile</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              
+              {/* 5. CORRECCIÓN: Usamos 'signOut' del nuevo contexto */}
               <DropdownMenuItem 
                 className="cursor-pointer hover:bg-destructive/10 text-destructive focus:text-destructive"
-                onClick={logout}
+                onClick={signOut}
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>

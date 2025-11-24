@@ -1,29 +1,17 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { supabase } from '@/integrations/supabase/client';
+// import { supabase } from '@/integrations/supabase/client';
 
+const BACKEND_URL = 'http://localhost:8001';
 
 
 export const GoogleSignInButton = () => {
-  const handleGoogleSignIn = async () => {
-    // Aqui es donde es donde cambiamos la logica para usar Supabase
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: window.location.origin // Redirige al usuario a la página de inicio
-        },
-      });
-
-      if (error) {
-        console.error('Error al iniciar sesion con Google', error.message);
-      } else {
-        console.log('Redirigiendo para la autenticación de Google', data);
-      }
-  } catch (err) {
-    console.error('Excepcion inesperada durante el inciio de sesion: ', err);
-  }
+  const handleSignIn = async () => {
+    window.location.href = `${BACKEND_URL}/v1/google/login`;
 };
+
+// Agregar funcion adicional para Cookie
+
 
   return (
     <motion.div
@@ -32,7 +20,7 @@ export const GoogleSignInButton = () => {
       transition={{ type: "spring", stiffness: 400, damping: 25 }}
     >
       <Button
-        onClick={handleGoogleSignIn}
+        onClick={handleSignIn}
         variant="outline"
         className="w-full h-12 flex items-center justify-center gap-3 bg-white border-2 border-border hover:border-primary/30 hover:bg-primary/5 smooth-transition"
       >

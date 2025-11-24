@@ -2,7 +2,8 @@ import { motion } from 'framer-motion';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, BarChart3, Users, Database, Sparkles } from 'lucide-react';
+// 1. Eliminamos BarChart3 de las importaciones
+import { MessageCircle, Users, Database, Sparkles } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const features = [
@@ -14,14 +15,7 @@ const features = [
     color: 'text-primary',
     bgColor: 'bg-primary/10'
   },
-  {
-    icon: BarChart3,
-    title: 'Analytics Dashboard',
-    description: 'Visual statistics with animated charts and KPI tracking',
-    path: '/dashboard',
-    color: 'text-success',
-    bgColor: 'bg-success/10'
-  },
+  // 2. Eliminamos el objeto de Analytics Dashboard de aquí
   {
     icon: Users,
     title: 'Lead Management',
@@ -31,6 +25,7 @@ const features = [
     bgColor: 'bg-warning/10'
   }
 ];
+
 
 export const WelcomeScreen = () => {
   return (
@@ -87,7 +82,10 @@ export const WelcomeScreen = () => {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6, duration: 0.8 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto w-full"
+        // 3. AQUÍ OCURRE LA MAGIA DEL CENTRADO:
+        // Cambiamos 'md:grid-cols-3' a 'md:grid-cols-2'
+        // Cambiamos 'max-w-6xl' a 'max-w-4xl' para que se vean más juntas y estéticas
+        className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto w-full"
       >
         {features.map((feature, index) => {
           const Icon = feature.icon;
@@ -130,7 +128,7 @@ export const WelcomeScreen = () => {
         })}
       </motion.div>
 
-      {/* Quick Stats */}
+      {/* Quick Stats - Limpiado para quitar referencias a Analytics */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
@@ -145,10 +143,7 @@ export const WelcomeScreen = () => {
             <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
             <span>Real-time Chat Tracking</span>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-            <span>Visual Analytics</span>
-          </div>
+          {/* Eliminada la estadística de Visual Analytics */}
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
             <span>Odoo Integration</span>
@@ -162,7 +157,8 @@ export const WelcomeScreen = () => {
         animate={{ opacity: 1 }}
         transition={{ delay: 1.5, duration: 0.5 }}
       >
-        <Link to="/dashboard">
+        {/* Actualizado para ir a Chat History en lugar de Dashboard */}
+        <Link to="/chat-history">
           <Button size="lg" className="btn-primary px-8 py-4 text-lg font-semibold shadow-glow">
             Get Started
           </Button>
