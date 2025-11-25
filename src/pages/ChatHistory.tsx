@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, MessageCircle, Send, ArrowLeft, Bot, User, Loader2 } from 'lucide-react';
 
-// URL del backend para hablar con el frontend
+// URL del backend para recibir los datos
 const API_URL = 'http://localhost:8002'; 
 
 // Interfaces de TypeScript con atributos de la base de datos de MongoDB
