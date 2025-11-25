@@ -50,31 +50,28 @@ export default function ChatHistory() {
   }, []);
 
   // Función para traer sessions (Paginada)
-  const fetchSessions = async (pageNum: number) => {
+const fetchSessions = async (pageNum: number) => {
     if (pageNum === 1) setIsLoadingList(true);
     else setIsLoadingMore(true);
 
     try {
-      // Llama al endpoint con paginación
+      // 👇 AQUÍ ESTÁ EL TRUCO: limit=20
+      // Esto le dice al backend: "Solo dame 20, no me des los 883"
       const response = await fetch(`${API_URL}/sessions?page=${pageNum}&limit=20`);
       
       if (response.ok) {
         const newSessions = await response.json();
         
-        // Si llegan menos de 20, significa que se acabaron
+        // Si llegan menos de 20, apagamos el botón de "Cargar más"
         if (newSessions.length < 20) {
           setHasMore(false);
         }
 
         if (pageNum === 1) {
-          setSessions(newSessions);
+          setSessions(newSessions); // Primera carga (solo 20)
         } else {
-          // Agregamos las nuevas a las viejas (filtrando duplicados por seguridad)
-          setSessions(prev => {
-             const existingIds = new Set(prev.map(s => s.sessionId));
-             const uniqueNew = newSessions.filter((s: Session) => !existingIds.has(s.sessionId));
-             return [...prev, ...uniqueNew];
-          });
+          // Cargas siguientes: Agregamos los nuevos a la lista que ya teníamos
+          setSessions(prev => [...prev, ...newSessions]);
         }
         setPage(pageNum);
       }
