@@ -55,7 +55,6 @@ const fetchSessions = async (pageNum: number) => {
     else setIsLoadingMore(true);
 
     try {
-      // 👇 AQUÍ ESTÁ EL TRUCO: limit=20
       // Esto le dice al backend: "Solo dame 20, no me des los 883"
       const response = await fetch(`${API_URL}/sessions?page=${pageNum}&limit=20`);
       
