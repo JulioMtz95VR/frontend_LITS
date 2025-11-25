@@ -1,290 +1,351 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Search, MessageCircle, Send, ArrowLeft } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Search, MessageCircle, Send, ArrowLeft, Bot, User, Loader2 } from 'lucide-react';
 
-// Datos de Clientes
-const mockConversations = [
-  {
-    id: '1',
-    userName: 'Elena Torres',
-    userAvatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150',
-    lastMessage: 'Thank you for the information about our lead tracking system...',
-    lastMessageDate: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    unreadCount: 2,
-    status: 'active'
-  },
-  {
-    id: '2', 
-    userName: 'Javier Méndez',
-    userAvatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
-    lastMessage: 'Could you help me with the dashboard analytics?',
-    lastMessageDate: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    unreadCount: 0,
-    status: 'pending'
-  },
-  {
-    id: '3',
-    userName: 'Valentina Ruiz',
-    userAvatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
-    lastMessage: 'The lead conversion rate has improved significantly.',
-    lastMessageDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    unreadCount: 1,
-    status: 'active'
-  }
-];
+// URL del backend para hablar con el frontend
+const API_URL = 'http://localhost:8002'; 
 
-const mockMessages = [
-  {
-    id: '1',
-    text: 'Hola, estoy revisando los logs y veo que la sincronización con Odoo falló hace una hora. ¿Saben si el webhook está caído?',
-    sender: 'user',
-    timestamp: new Date(Date.now() - 30 * 60 * 1000),
-  },
-  {
-    id: '2',
-    text: 'Hola. Déjame verificar el estado del servicio. Acabo de revisar y el endpoint está respondiendo, pero veo un error 401 de autenticación en tu cuenta.',
-    sender: 'system',
-    timestamp: new Date(Date.now() - 25 * 60 * 1000),
-  },
-  {
-    id: '3',
-    text: 'Ah, ya veo. Rotamos las API Keys en producción esta mañana por seguridad. ¿Necesito actualizar el token en el panel de configuración?',
-    sender: 'user',
-    timestamp: new Date(Date.now() - 20 * 60 * 1000),
-  },
-  {
-    id: '4',
-    text: 'Exacto. Ve a Configuración > Integraciones > Odoo y pega el nuevo token. El sistema reintentará la carga del payload automáticamente en 5 minutos.',
-    sender: 'system',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000),
-  }
-];
+// Interfaces de TypeScript con atributos de la base de datos de MongoDB
+interface MessageData {
+  content: string;
+  additional_kwargs?: any;
+}
+
+interface Message {
+  type: string; // "human" o "ai"
+  data: MessageData; // Aqui es donde de almacenan el tenxto de los mensajes
+  timestamp?: string; 
+}
+
+interface Session {
+  sessionId: string;
+}
 
 export default function ChatHistory() {
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  // Estados de Datos
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
+  
+  // Estados de UI
   const [newMessage, setNewMessage] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoadingList, setIsLoadingList] = useState(true);
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
 
-  const filteredConversations = mockConversations.filter(conv =>
-    conv.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    conv.lastMessage.toLowerCase().includes(searchTerm.toLowerCase())
+  // Estados de Paginación
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // 1. Carga inicial
+  useEffect(() => {
+    fetchSessions(1);
+  }, []);
+
+  // Función para traer sessions (Paginada)
+  const fetchSessions = async (pageNum: number) => {
+    if (pageNum === 1) setIsLoadingList(true);
+    else setIsLoadingMore(true);
+
+    try {
+      // Llama al endpoint con paginación
+      const response = await fetch(`${API_URL}/sessions?page=${pageNum}&limit=20`);
+      
+      if (response.ok) {
+        const newSessions = await response.json();
+        
+        // Si llegan menos de 20, significa que se acabaron
+        if (newSessions.length < 20) {
+          setHasMore(false);
+        }
+
+        if (pageNum === 1) {
+          setSessions(newSessions);
+        } else {
+          // Agregamos las nuevas a las viejas (filtrando duplicados por seguridad)
+          setSessions(prev => {
+             const existingIds = new Set(prev.map(s => s.sessionId));
+             const uniqueNew = newSessions.filter((s: Session) => !existingIds.has(s.sessionId));
+             return [...prev, ...uniqueNew];
+          });
+        }
+        setPage(pageNum);
+      }
+    } catch (error) {
+      console.error("Error cargando sesiones:", error);
+    } finally {
+      setIsLoadingList(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  // Función del botón "Cargar más"
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasMore) {
+      fetchSessions(page + 1);
+    }
+  };
+
+  // Seleccionar un chat y traer sus mensajes
+  const handleSelectSession = async (sessionId: string) => {
+    setSelectedChatId(sessionId);
+    setIsLoadingChat(true);
+    try {
+      const response = await fetch(`${API_URL}/mensajes/${sessionId}`);
+      if (response.ok) {
+        const document = await response.json();
+        
+        // TU ESTRUCTURA: El array está dentro de la propiedad 'messages'
+        if (document && Array.isArray(document.messages)) {
+            setMessages(document.messages);
+        } else {
+            setMessages([]);
+        }
+      }
+    } catch (error) {
+      console.error("Error cargando conversación:", error);
+      setMessages([]);
+    } finally {
+      setIsLoadingChat(false);
+    }
+  };
+
+  // Filtrado local para la búsqueda
+  const filteredSessions = sessions.filter(session =>
+    session.sessionId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const selectedConversation = mockConversations.find(conv => conv.id === selectedChat);
-
-  const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-    
-    // Here you would save to MongoDB
-    console.log('Sending message:', newMessage);
-    setNewMessage('');
-  };
-
-  const handleBackToList = () => {
-    setSelectedChat(null);
-  };
-
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 h-[calc(100vh-100px)] flex flex-col">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        className="flex-none"
       >
-        <h1 className="text-3xl font-bold text-foreground mb-2">Chat History</h1>
-        <p className="text-muted-foreground">Manage and review all conversations</p>
+        <h1 className="text-3xl font-bold text-foreground mb-1">Historial de Chats</h1>
+        <p className="text-muted-foreground">Revisa las interacciones del Agente Comercial</p>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
-        {/* Conversations List */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+        
+        {/* --- COLUMNA IZQUIERDA: LISTA DE SESIONES --- */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className={`lg:col-span-1 ${selectedChat ? 'hidden lg:block' : ''}`}
+          className={`lg:col-span-1 h-full flex flex-col ${selectedChatId ? 'hidden lg:flex' : 'flex'}`}
         >
-          <Card className="card-elegant h-full flex flex-col">
-            <CardHeader className="pb-4">
-              <CardTitle className="flex items-center gap-2">
+          <Card className="h-full flex flex-col border-border/50 shadow-sm bg-card/50 backdrop-blur-sm">
+            <CardHeader className="pb-4 space-y-4">
+              <CardTitle className="flex items-center gap-2 text-lg">
                 <MessageCircle className="w-5 h-5 text-primary" />
-                Conversations
+                Conversaciones ({filteredSessions.length})
               </CardTitle>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search conversations..."
+                  placeholder="Buscar ID de sesión..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-background/50"
                 />
               </div>
             </CardHeader>
             
-            <CardContent className="flex-1 overflow-y-auto space-y-2">
-              {filteredConversations.map((conversation) => (
-                <motion.div
-                  key={conversation.id}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setSelectedChat(conversation.id)}
-                  className={`
-                    p-4 rounded-xl cursor-pointer transition-all duration-300 border
-                    ${selectedChat === conversation.id 
-                      ? 'bg-primary/10 border-primary shadow-primary' 
-                      : 'bg-card hover:bg-muted border-border'
-                    }
-                  `}
-                >
-                  <div className="flex items-start space-x-3">
-                    <Avatar className="w-10 h-10 border-2 border-white">
-                      <AvatarImage src={conversation.userAvatar} />
-                      <AvatarFallback className="bg-primary text-white">
-                        {conversation.userName.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-semibold text-sm text-foreground truncate">
-                          {conversation.userName}
-                        </h3>
-                        <div className="flex items-center space-x-2">
-                          {conversation.unreadCount > 0 && (
-                            <Badge className="bg-primary text-white text-xs px-2 py-1">
-                              {conversation.unreadCount}
-                            </Badge>
-                          )}
-                          <Badge 
-                            variant="outline" 
-                            className={`text-xs ${
-                              conversation.status === 'active' 
-                                ? 'border-success text-success' 
-                                : 'border-warning text-warning'
-                            }`}
-                          >
-                            {conversation.status}
-                          </Badge>
+            <CardContent className="flex-1 p-0 overflow-hidden">
+              <ScrollArea className="h-full px-4">
+                <div className="space-y-2 pb-4">
+                  {isLoadingList ? (
+                    <div className="flex justify-center p-8"><Loader2 className="animate-spin text-primary" /></div>
+                  ) : filteredSessions.length === 0 ? (
+                    <p className="text-center text-muted-foreground py-8">No se encontraron sesiones</p>
+                  ) : (
+                    <>
+                        {filteredSessions.map((session) => (
+                        <motion.div
+                            key={session.sessionId}
+                            layoutId={session.sessionId}
+                            onClick={() => handleSelectSession(session.sessionId)}
+                            className={`
+                            group flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all duration-200 border
+                            ${selectedChatId === session.sessionId 
+                                ? 'bg-primary/10 border-primary/20 shadow-sm' 
+                                : 'bg-transparent border-transparent hover:bg-muted/50 hover:border-border'
+                            }
+                            `}
+                        >
+                            <Avatar className="h-10 w-10 border border-border bg-background">
+                            <AvatarImage src={`https://api.dicebear.com/7.x/identicon/svg?seed=${session.sessionId}`} />
+                            <AvatarFallback>ID</AvatarFallback>
+                            </Avatar>
+                            
+                            <div className="flex-1 min-w-0">
+                            <div className="flex justify-between items-baseline mb-1">
+                                <span className={`font-medium truncate ${selectedChatId === session.sessionId ? 'text-primary' : 'text-foreground'}`}>
+                                Sesión: {session.sessionId.substring(0, 12)}...
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Badge variant="outline" className="text-[10px] h-5 px-1 bg-background/50">
+                                Activo
+                                </Badge>
+                                <span className="text-xs text-muted-foreground truncate">
+                                ID Completo: {session.sessionId}
+                                </span>
+                            </div>
+                            </div>
+                        </motion.div>
+                        ))}
+
+                        {/* BOTÓN CARGAR MÁS */}
+                        <div className="pt-4 pb-2 flex justify-center">
+                            {hasMore ? (
+                                <Button 
+                                variant="outline" 
+                                size="sm" 
+                                onClick={handleLoadMore}
+                                disabled={isLoadingMore}
+                                className="w-full text-xs"
+                                >
+                                {isLoadingMore ? (
+                                    <>
+                                    <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+                                    Cargando...
+                                    </>
+                                ) : (
+                                    "Cargar más conversaciones"
+                                )}
+                                </Button>
+                            ) : (
+                                <p className="text-[10px] text-muted-foreground">Fin del historial</p>
+                            )}
                         </div>
-                      </div>
-                      <p className="text-muted-foreground text-xs mt-1 line-clamp-2">
-                        {conversation.lastMessage}
-                      </p>
-                      <span className="text-xs text-muted-foreground mt-2 block">
-                        {formatDistanceToNow(conversation.lastMessageDate, { addSuffix: true })}
-                      </span>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                    </>
+                  )}
+                </div>
+              </ScrollArea>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Chat Messages */}
+        {/* --- COLUMNA DERECHA: CHAT PRINCIPAL --- */}
         <motion.div
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="lg:col-span-2"
+          layout
+          className={`lg:col-span-2 h-full flex flex-col ${!selectedChatId ? 'hidden lg:flex' : 'flex'}`}
         >
-          <Card className="card-elegant h-full flex flex-col">
-            {selectedConversation ? (
+          <Card className="h-full flex flex-col border-border/50 shadow-md overflow-hidden bg-card">
+            {selectedChatId ? (
               <>
-                <CardHeader className="border-b border-border/50 pb-4">
-                  <div className="flex items-center space-x-3">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleBackToList}
-                      className="lg:hidden"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                    </Button>
-                    <Avatar className="w-10 h-10 border-2 border-white">
-                      <AvatarImage src={selectedConversation.userAvatar} />
-                      <AvatarFallback className="bg-primary text-white">
-                        {selectedConversation.userName.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h3 className="font-semibold text-foreground">
-                        {selectedConversation.userName}
-                      </h3>
-                      <p className="text-sm text-muted-foreground">
-                        Last seen {formatDistanceToNow(selectedConversation.lastMessageDate, { addSuffix: true })}
-                      </p>
-                    </div>
+                {/* Encabezado del Chat */}
+                <div className="flex-none p-4 border-b border-border flex items-center gap-3 bg-muted/20">
+                  <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSelectedChatId(null)}>
+                    <ArrowLeft className="w-5 h-5" />
+                  </Button>
+                  <Avatar className="h-10 w-10 border border-border">
+                    <AvatarImage src={`https://api.dicebear.com/7.x/identicon/svg?seed=${selectedChatId}`} />
+                  </Avatar>
+                  <div>
+                    <h3 className="font-semibold text-sm">Sesión: {selectedChatId}</h3>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-green-500 inline-block animate-pulse" />
+                      Historial sincronizado
+                    </p>
                   </div>
-                </CardHeader>
+                </div>
 
-                <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {mockMessages.map((message) => (
-                    <motion.div
-                      key={message.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                      className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`
-                          max-w-[80%] p-3 rounded-2xl shadow-sm
-                          ${message.sender === 'user'
-                            ? 'bg-primary text-white rounded-br-md'
-                            : 'bg-muted text-foreground rounded-bl-md'
-                          }
-                        `}
-                      >
-                        <p className="text-sm leading-relaxed">{message.text}</p>
-                        <span 
-                          className={`text-xs mt-2 block ${
-                            message.sender === 'user' ? 'text-white/80' : 'text-muted-foreground'
-                          }`}
-                        >
-                          {formatDistanceToNow(message.timestamp, { addSuffix: true })}
-                        </span>
+                {/* Área de Mensajes */}
+                <ScrollArea className="flex-1 p-4 bg-slate-50/50 dark:bg-slate-950/50">
+                  <div className="space-y-4 max-w-3xl mx-auto">
+                    {isLoadingChat ? (
+                       <div className="flex justify-center p-10"><Loader2 className="animate-spin w-8 h-8 text-primary" /></div>
+                    ) : messages.length === 0 ? (
+                      <div className="text-center py-20 text-muted-foreground">
+                        <MessageCircle className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                        <p>No hay mensajes en esta sesión.</p>
                       </div>
-                    </motion.div>
-                  ))}
-                </CardContent>
+                    ) : (
+                      messages.map((msg, index) => {
+                        // Determinar quién envía el mensaje
+                        const isUser = msg.type === 'human';
+                        
+                        return (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            key={index}
+                            className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}
+                          >
+                            {/* Icono del BOT */}
+                            {!isUser && (
+                              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-none">
+                                <Bot className="w-4 h-4 text-primary" />
+                              </div>
+                            )}
+                            
+                            {/* Burbuja de Texto */}
+                            <div className={`
+                              max-w-[80%] rounded-2xl px-4 py-3 shadow-sm text-sm
+                              ${isUser 
+                                ? 'bg-primary text-primary-foreground rounded-tr-sm' 
+                                : 'bg-white dark:bg-slate-800 border border-border rounded-tl-sm'
+                              }
+                            `}>
+                              <p className="whitespace-pre-wrap">
+                                {/* AQUÍ LEEMOS EL CONTENIDO DE MANERA SEGURA */}
+                                {msg.data?.content || "..."}
+                              </p>
+                              
+                              {msg.timestamp && (
+                                <p className={`text-[10px] mt-1 text-right opacity-70`}>
+                                   {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                                </p>
+                              )}
+                            </div>
 
-                <div className="border-t border-border/50 p-4">
-                  <div className="flex space-x-2">
-                    <Input
-                      placeholder="Type your message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                      className="flex-1"
+                            {/* Icono del USUARIO */}
+                            {isUser && (
+                              <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-none">
+                                <User className="w-4 h-4 text-muted-foreground" />
+                              </div>
+                            )}
+                          </motion.div>
+                        );
+                      })
+                    )}
+                  </div>
+                </ScrollArea>
+
+                {/* Input (Visual) */}
+                <div className="p-4 bg-background border-t border-border">
+                  <div className="flex gap-2 max-w-3xl mx-auto">
+                    <Input 
+                      placeholder="Nota: Solo lectura (historial)" 
+                      disabled
+                      className="rounded-full bg-muted/50"
                     />
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={!newMessage.trim()}
-                      className="btn-primary px-4"
-                    >
+                    <Button size="icon" disabled className="rounded-full w-10 h-10 shrink-0 shadow-sm">
                       <Send className="w-4 h-4" />
                     </Button>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
-                    <MessageCircle className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-semibold text-foreground">
-                    Select a conversation
-                  </h3>
-                  <p className="text-muted-foreground">
-                    Choose a chat from the sidebar to start messaging
-                  </p>
+              // Estado vacío (Sin chat seleccionado)
+              <div className="flex-1 flex flex-col items-center justify-center text-muted-foreground bg-muted/10 p-6 text-center">
+                <div className="w-20 h-20 bg-primary/5 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                   <MessageCircle className="w-10 h-10 text-primary/40" />
                 </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Selecciona una conversación</h3>
+                <p className="max-w-md mx-auto">
+                  Elige una sesión del menú lateral para ver el historial completo.
+                </p>
               </div>
             )}
           </Card>
