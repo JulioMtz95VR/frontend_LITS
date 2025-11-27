@@ -1,157 +1,100 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { 
-  Search, 
-  Users, 
-  ExternalLink, 
-  Filter, 
-  MoreVertical, 
-  Clock,
-  TrendingUp,
-  Mail,
-  Phone
-} from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow  } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Search, Users, ExternalLink, Filter, MoreVertical, TrendingUp, Mail, Phone, Loader2, MessageSquare, ArrowLeft, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
-// Mock data - will be replaced with real MongoDB data
-const mockLeads = [
-  {
-    id: '1',
-    name: 'Alice Johnson',
-    email: 'alice.johnson@techcorp.com',
-    phone: '+1 (555) 123-4567',
-    company: 'TechCorp',
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150',
-    initialContact: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    lastActivity: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    status: 'hot',
-    conversionProbability: 85,
-    source: 'Website Form',
-    notes: 'Interested in enterprise solution, ready to schedule demo'
-  },
-  {
-    id: '2',
-    name: 'Bob Smith',
-    email: 'bob.smith@innovate.io',
-    phone: '+1 (555) 987-6543',
-    company: 'Innovate.io',
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150',
-    initialContact: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    lastActivity: new Date(Date.now() - 8 * 60 * 60 * 1000),
-    status: 'warm',
-    conversionProbability: 65,
-    source: 'LinkedIn',
-    notes: 'Requested pricing information, comparing solutions'
-  },
-  {
-    id: '3',
-    name: 'Carol Williams',
-    email: 'carol@startupxyz.com',
-    phone: '+1 (555) 456-7890',
-    company: 'StartupXYZ',
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
-    initialContact: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    lastActivity: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    status: 'cold',
-    conversionProbability: 35,
-    source: 'Referral',
-    notes: 'Early stage startup, budget constraints mentioned'
-  },
-  {
-    id: '4',
-    name: 'David Brown',
-    email: 'david.brown@megacorp.com',
-    phone: '+1 (555) 321-0987',
-    company: 'MegaCorp',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-    initialContact: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    lastActivity: new Date(Date.now() - 30 * 60 * 1000),
-    status: 'hot',
-    conversionProbability: 92,
-    source: 'Trade Show',
-    notes: 'Decision maker, urgent need, budget approved'
-  }
-];
+// URL DEL BACKEND para mostrar las convcersaciones
+const API_URL = 'http://localhost:8002';
 
-const statusColors = {
+// Interfaz para la vista 
+interface Lead {
+  id: string; // Será el sessionId
+  name: string;
+  email: string;
+  phone: string;
+  company: string;
+  avatar: string;
+  status: 'hot' | 'warm' | 'cold' | 'new';
+  conversionProbability: number;
+  source: string;
+  // lastActivity: Date; // Opcional si el backend no lo manda
+}
+
+const statusColors: any = {
   hot: 'bg-primary text-white',
   warm: 'bg-warning text-white',
-  cold: 'bg-muted text-muted-foreground'
+  cold: 'bg-muted text-muted-foreground',
+  new: 'bg-blue-500 text-white'
 };
 
 const probabilityColors = (probability: number) => {
-  if (probability >= 80) return 'text-success';
-  if (probability >= 50) return 'text-warning';
+  if (probability >= 80) return 'text-green-600';
+  if (probability >= 50) return 'text-yellow-600';
   return 'text-muted-foreground';
 };
 
 export default function LeadTracking() {
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const { toast } = useToast();
 
-  const filteredLeads = mockLeads.filter(lead => {
-    const matchesSearch = lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.email.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesFilter = filterStatus === 'all' || lead.status === filterStatus;
-    
-    return matchesSearch && matchesFilter;
-  });
+  // Paginación
+  const [page, setPage] = useState(1);
+  
+  useEffect(() => {
+    fetchLeads(page);
+  }, [page]);
 
-  const handleSendToOdoo = (leadId: string, leadName: string) => {
-    // Here you would integrate with Odoo API
-    console.log('Sending lead to Odoo:', leadId);
-    
-    toast({
-      title: "Lead Sent to Odoo",
-      description: `${leadName} has been successfully exported to Odoo CRM.`,
-    });
+  const fetchLeads = async (pageNum: number) => {
+    setIsLoading(true);
+    try {
+      // Llamamos al mismo endpoint /sessions porque los chats son leads interesados
+      const response = await fetch(`${API_URL}/sessions?page=${pageNum}&limit=10`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // ADAPTADOR: Convertimos Session -> Lead
+        const adaptedLeads: Lead[] = data.map((session: any) => ({
+            id: session.sessionId,
+            name: session.name !== "Desconocido" ? session.name : `Lead ${session.sessionId.substring(5,10)}`,
+            email: session.contact_info || "Sin correo",
+            phone: "Sin teléfono",  
+            company: "N/A",
+            avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${session.name}`,
+            status: 'new', // Default
+            conversionProbability: Math.floor(Math.random() * 100), // Simulado por ahora
+            source: 'Chatbot',
+        }));
+        
+        setLeads(adaptedLeads);
+      }
+    } catch (error) {
+      console.error("Error cargando leads:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const stats = [
-    { 
-      label: 'Total Leads', 
-      value: mockLeads.length.toString(),
-      icon: Users,
-      color: 'text-primary'
-    },
-    { 
-      label: 'Hot Leads', 
-      value: mockLeads.filter(l => l.status === 'hot').length.toString(),
-      icon: TrendingUp,
-      color: 'text-success'
-    },
-    { 
-      label: 'Avg. Time to Contact', 
-      value: '2.4h',
-      icon: Clock,
-      color: 'text-warning'
-    }
-  ];
+  const filteredLeads = leads.filter(lead => {
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch = 
+        lead.name.toLowerCase().includes(searchLower) ||
+        lead.email.toLowerCase().includes(searchLower);
+    
+    const matchesFilter = filterStatus === 'all' || lead.status === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
 
   return (
     <div className="space-y-6">
@@ -161,41 +104,32 @@ export default function LeadTracking() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-3xl font-bold text-foreground mb-2">Lead Tracking</h1>
-        <p className="text-muted-foreground">Monitor and manage your lead pipeline</p>
+        <p className="text-muted-foreground">Monitorea y gestiona tu pipeline de leads desde Chatbot</p>
       </motion.div>
 
-      {/* Stats Cards */}
+      {/* --- STATS (Simulados visualmente) --- */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {stats.map((stat, index) => {
-          const Icon = stat.icon;
-          return (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <Card className="card-elegant hover-lift">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground mb-1">
-                        {stat.label}
-                      </p>
-                      <p className="text-2xl font-bold text-foreground">
-                        {stat.value}
-                      </p>
-                    </div>
-                    <Icon className={`w-8 h-8 ${stat.color}`} />
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          );
-        })}
+        <Card className="card-elegant hover-lift">
+            <CardContent className="p-6 flex items-center justify-between">
+                <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Active Leads</p>
+                    <p className="text-2xl font-bold text-foreground">{leads.length}</p>
+                </div>
+                <Users className="w-8 h-8 text-primary" />
+            </CardContent>
+        </Card>
+        <Card className="card-elegant hover-lift">
+            <CardContent className="p-6 flex items-center justify-between">
+                <div>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Avg Probability</p>
+                    <p className="text-2xl font-bold text-foreground">65%</p>
+                </div>
+                <TrendingUp className="w-8 h-8 text-success" />
+            </CardContent>
+        </Card>
       </div>
 
-      {/* Filters and Search */}
+      {/* --- FILTROS --- */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -213,7 +147,7 @@ export default function LeadTracking() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search leads by name, company, or email..."
+                  placeholder="Search by name or email..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -223,30 +157,23 @@ export default function LeadTracking() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2">
                     <Filter className="w-4 h-4" />
-                    Filter: {filterStatus === 'all' ? 'All' : filterStatus}
+                    Filter: {filterStatus}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuLabel>Filter by Status</DropdownMenuLabel>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => setFilterStatus('all')}>
-                    All Leads
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilterStatus('hot')}>
-                    Hot Leads
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilterStatus('warm')}>
-                    Warm Leads
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilterStatus('cold')}>
-                    Cold Leads
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus('all')}>All</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus('new')}>New</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
 
-            {/* Leads Table */}
+            {/* --- TABLA --- */}
             <div className="rounded-lg border border-border overflow-hidden">
+              {isLoading ? (
+                  <div className="flex justify-center p-12"><Loader2 className="animate-spin w-8 h-8 text-primary" /></div>
+              ) : (
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
@@ -254,7 +181,6 @@ export default function LeadTracking() {
                     <TableHead>Contact Info</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Probability</TableHead>
-                    <TableHead>Time Since Contact</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -289,16 +215,12 @@ export default function LeadTracking() {
                             <Mail className="w-3 h-3 text-muted-foreground" />
                             <span className="text-foreground">{lead.email}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-sm">
-                            <Phone className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-foreground">{lead.phone}</span>
-                          </div>
                         </div>
                       </TableCell>
                       
                       <TableCell>
-                        <Badge className={`${statusColors[lead.status]} font-medium`}>
-                          {lead.status.toUpperCase()}
+                        <Badge className={`${statusColors[lead.status]} font-medium capitalize`}>
+                          {lead.status}
                         </Badge>
                       </TableCell>
                       
@@ -310,8 +232,7 @@ export default function LeadTracking() {
                           <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
                             <div 
                               className={`h-full transition-all duration-500 ${
-                                lead.conversionProbability >= 80 ? 'bg-success' :
-                                lead.conversionProbability >= 50 ? 'bg-warning' : 'bg-muted-foreground'
+                                lead.conversionProbability >= 80 ? 'bg-success' : 'bg-warning'
                               }`}
                               style={{ width: `${lead.conversionProbability}%` }}
                             />
@@ -320,26 +241,13 @@ export default function LeadTracking() {
                       </TableCell>
                       
                       <TableCell>
-                        <div className="space-y-1">
-                          <p className="text-sm text-foreground">
-                            {formatDistanceToNow(lead.initialContact, { addSuffix: true })}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Last activity: {formatDistanceToNow(lead.lastActivity, { addSuffix: true })}
-                          </p>
-                        </div>
-                      </TableCell>
-                      
-                      <TableCell>
                         <div className="flex items-center gap-2">
-                          <Button
-                            onClick={() => handleSendToOdoo(lead.id, lead.name)}
-                            className="btn-primary text-xs px-3 py-1 h-8"
-                          >
-                            <ExternalLink className="w-3 h-3 mr-1" />
-                            Send to Odoo
-                          </Button>
-                          
+                          {/* BOTÓN CHAT: Redirige al historial */}
+                          <Link to="/chat-history">
+                             <Button variant="ghost" size="icon" className="text-blue-500 hover:bg-blue-50">
+                                <MessageSquare className="w-4 h-4" />
+                             </Button>
+                          </Link>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -348,12 +256,7 @@ export default function LeadTracking() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem>View Details</DropdownMenuItem>
-                              <DropdownMenuItem>Edit Lead</DropdownMenuItem>
-                              <DropdownMenuItem>Add Note</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive">
-                                Delete Lead
-                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -362,7 +265,32 @@ export default function LeadTracking() {
                   ))}
                 </TableBody>
               </Table>
+              )}
             </div>
+
+            {/* --- PAGINACIÓN --- */}
+            <div className="flex items-center justify-end space-x-2 py-4">
+                <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                disabled={page === 1 || isLoading}
+                >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Previous
+                </Button>
+                <span className="text-sm text-muted-foreground">Page {page}</span>
+                <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage(prev => prev + 1)}
+                disabled={leads.length < 10 || isLoading}
+                >
+                Next
+                <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+            </div>
+
           </CardContent>
         </Card>
       </motion.div>

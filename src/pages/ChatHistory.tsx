@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Search, MessageCircle, Send, ArrowLeft, Bot, User, Loader2 } from 'lucide-react';
 
-// URL del backend para recibir los datos
+// URL del backend para acceder a el
 const API_URL = 'http://localhost:8002'; 
 
 // Interfaces de TypeScript con atributos de la base de datos de MongoDB
@@ -46,31 +46,40 @@ export default function ChatHistory() {
 
   // 1. Carga inicial
   useEffect(() => {
-    fetchSessions(1);
-  }, []);
+    // Creamos un "retraso" para no buscar en cada letra
+    const delayDebounce = setTimeout(() => {
+      setPage(1); // Resetear a página 1 al buscar
+      fetchSessions(1, searchTerm);
+    }, 500); // 500ms de espera
+
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm]);
 
   // Función para traer sessions (Paginada)
-const fetchSessions = async (pageNum: number) => {
+const fetchSessions = async (pageNum: number, searchQuery: string = '') => {
     if (pageNum === 1) setIsLoadingList(true);
     else setIsLoadingMore(true);
 
     try {
       // Esto le dice al backend: "Solo dame 20, no me des los 883"
-      const response = await fetch(`${API_URL}/sessions?page=${pageNum}&limit=20`);
+      const url = `${API_URL}/sessions?page=${pageNum}&limit=20&search=${searchQuery}`;
+      const response = await fetch(url);
       
       if (response.ok) {
         const newSessions = await response.json();
         
         // Si llegan menos de 20, apagamos el botón de "Cargar más"
-        if (newSessions.length < 20) {
-          setHasMore(false);
-        }
+        if (newSessions.length < 20) setHasMore(false);
+        else setHasMore(true);
 
         if (pageNum === 1) {
-          setSessions(newSessions); // Primera carga (solo 20)
+          setSessions(newSessions);
         } else {
-          // Cargas siguientes: Agregamos los nuevos a la lista que ya teníamos
-          setSessions(prev => [...prev, ...newSessions]);
+          setSessions(prev => {
+             const existingIds = new Set(prev.map(s => s.sessionId));
+             const uniqueNew = newSessions.filter((s: Session) => !existingIds.has(s.sessionId));
+             return [...prev, ...uniqueNew];
+          });
         }
         setPage(pageNum);
       }
@@ -83,9 +92,10 @@ const fetchSessions = async (pageNum: number) => {
   };
 
   // Función del botón "Cargar más"
-  const handleLoadMore = () => {
+const handleLoadMore = () => {
     if (!isLoadingMore && hasMore) {
-      fetchSessions(page + 1);
+      // Pasamos el término de búsqueda actual
+      fetchSessions(page + 1, searchTerm); 
     }
   };
 
@@ -98,7 +108,7 @@ const fetchSessions = async (pageNum: number) => {
       if (response.ok) {
         const document = await response.json();
         
-        // TU ESTRUCTURA: El array está dentro de la propiedad 'messages'
+        // El array está dentro de la propiedad 'messages'
         if (document && Array.isArray(document.messages)) {
             setMessages(document.messages);
         } else {
