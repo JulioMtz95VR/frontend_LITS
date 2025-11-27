@@ -112,7 +112,7 @@ export default function LeadTracking() {
         <Card className="card-elegant hover-lift">
             <CardContent className="p-6 flex items-center justify-between">
                 <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Active Leads</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Activos</p>
                     <p className="text-2xl font-bold text-foreground">{leads.length}</p>
                 </div>
                 <Users className="w-8 h-8 text-primary" />
@@ -121,7 +121,7 @@ export default function LeadTracking() {
         <Card className="card-elegant hover-lift">
             <CardContent className="p-6 flex items-center justify-between">
                 <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">Avg Probability</p>
+                    <p className="text-sm font-medium text-muted-foreground mb-1">Probabilidad promedio</p>
                     <p className="text-2xl font-bold text-foreground">65%</p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-success" />
@@ -147,7 +147,7 @@ export default function LeadTracking() {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input
-                  placeholder="Search by name or email..."
+                  placeholder="Buscar por nombre o correo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -157,7 +157,7 @@ export default function LeadTracking() {
                 <DropdownMenuTrigger asChild>
                   <Button variant="outline" className="flex items-center gap-2">
                     <Filter className="w-4 h-4" />
-                    Filter: {filterStatus}
+                    Filtrar: {filterStatus}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -178,10 +178,9 @@ export default function LeadTracking() {
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead>Lead</TableHead>
-                    <TableHead>Contact Info</TableHead>
+                    <TableHead>Información de Contacto</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>Probability</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Probabilidad</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -255,8 +254,8 @@ export default function LeadTracking() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
-                              <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                              <DropdownMenuItem>Ver Detalles</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">Eliminar</DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -279,7 +278,7 @@ export default function LeadTracking() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Previous
                 </Button>
-                <span className="text-sm text-muted-foreground">Page {page}</span>
+                <span className="text-sm text-muted-foreground">Página {page}</span>
                 <Button
                 variant="outline"
                 size="sm"

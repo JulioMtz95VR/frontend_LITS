@@ -10,7 +10,7 @@ const features = [
   {
     icon: MessageCircle,
     title: 'Chat History',
-    description: 'WhatsApp-style conversation tracking with real-time messaging',
+    description: 'Historial de Chats del Agente Comercial',
     path: '/chat-history',
     color: 'text-primary',
     bgColor: 'bg-primary/10'
@@ -19,7 +19,7 @@ const features = [
   {
     icon: Users,
     title: 'Lead Management',
-    description: 'Track leads with conversion probability and Odoo integration',
+    description: 'Gestion de los clientes',
     path: '/lead-tracking',
     color: 'text-warning',
     bgColor: 'bg-warning/10'
@@ -55,7 +55,7 @@ export const WelcomeScreen = () => {
               Welcome to <span className="text-gradient">LITS Manager</span>
             </h1>
             <p className="text-xl text-muted-foreground">
-              Your complete lead administration and conversation tracking solution
+              La solución completa de administración de clientes potenciales y seguimiento de conversaciones
             </p>
           </div>
         </div>
@@ -118,7 +118,7 @@ export const WelcomeScreen = () => {
                       variant="outline"
                       className="w-full group-hover:border-primary group-hover:text-primary transition-colors duration-300"
                     >
-                      Explore Feature
+                      Explorar Módulo
                     </Button>
                   </CardContent>
                 </Card>
@@ -136,18 +136,14 @@ export const WelcomeScreen = () => {
         className="text-center space-y-4"
       >
         <h3 className="text-lg font-semibold text-muted-foreground">
-          Ready to manage your leads efficiently?
+          Gestiona los cleinets de manera eficiente
         </h3>
         <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
           <div className="flex items-center space-x-2">
             <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-            <span>Real-time Chat Tracking</span>
+            <span>Seguimiento de chat en tiempo real</span>
           </div>
           {/* Eliminada la estadística de Visual Analytics */}
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-warning rounded-full animate-pulse"></div>
-            <span>Odoo Integration</span>
-          </div>
         </div>
       </motion.div>
 
@@ -160,7 +156,7 @@ export const WelcomeScreen = () => {
         {/* Actualizado para ir a Chat History en lugar de Dashboard */}
         <Link to="/chat-history">
           <Button size="lg" className="btn-primary px-8 py-4 text-lg font-semibold shadow-glow">
-            Get Started
+            Comenzar
           </Button>
         </Link>
       </motion.div>
